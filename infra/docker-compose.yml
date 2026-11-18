@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: aisd-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: aisd_user
+      POSTGRES_PASSWORD: aisd_password
+      POSTGRES_DB: aisd_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.backend
+    container_name: aisd-backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://aisd_user:aisd_password@postgres:5432/aisd_db
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=qwen3.5:4b
+      - REMEDIATION_MOCK_MODE=true
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../infra/Dockerfile.frontend
+    container_name: aisd-frontend
+    restart: always
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

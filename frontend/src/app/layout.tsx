@@ -1,0 +1,28 @@
+import type { Metadata } from "next";
+import "./globals.css";
+import Navbar from "@/components/Navbar";
+
+export const metadata: Metadata = {
+  title: "AISD — AI-Powered IT Incident Management System",
+  description: "Centralized IT Incident Management with Deterministic Rules, Ollama LLM, RAG & Windows Endpoint Agent",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body className="min-h-screen flex flex-col bg-slate-50 antialiased">
+        <Navbar />
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {children}
+        </main>
+        <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+          AISD Incident Management System &bull; College On-Premises Architecture &bull; Local Ollama & Endpoint Agent
+        </footer>
+      </body>
+    </html>
+  );
+}

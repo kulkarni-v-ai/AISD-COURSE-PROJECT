@@ -1,0 +1,190 @@
+erDiagram
+    USERS ||--o{ INCIDENTS : "reports (reporter_id)"
+    USERS ||--o{ INCIDENTS : "assigned_to (assigned_technician_id)"
+    USERS ||--o{ INCIDENT_COMMENTS : "writes (author_id)"
+    USERS ||--o{ APPROVALS : "approves (approver_user_id)"
+    USERS ||--o{ ENDPOINTS : "owns (owner_user_id)"
+
+    ENDPOINTS ||--o{ INCIDENTS : "associated_with (endpoint_id)"
+    ENDPOINTS ||--o{ ENDPOINT_SYNC_EVENTS : "generates (endpoint_id)"
+    ENDPOINTS ||--o{ REMEDIATION_EXECUTIONS : "executes_on (endpoint_id)"
+    ENDPOINTS ||--o{ DIAGNOSTIC_RUNS : "runs_on (endpoint_id)"
+
+    INCIDENTS ||--o{ INCIDENT_COMMENTS : "contains (incident_id)"
+    INCIDENTS ||--o{ DIAGNOSTIC_RUNS : "has (incident_id)"
+    INCIDENTS ||--o{ REMEDIATION_PLANS : "has (incident_id)"
+
+    DIAGNOSTIC_RUNS ||--o{ DIAGNOSTIC_EVIDENCE : "contains (diagnostic_run_id)"
+    DIAGNOSTIC_RUNS ||--o| REMEDIATION_PLANS : "may_inform (diagnostic_run_id)"
+
+    KNOWLEDGE_DOCUMENTS ||--o{ KNOWLEDGE_CHUNKS : "contains (document_id)"
+
+    REMEDIATION_PLANS ||--o| APPROVALS : "has (remediation_plan_id)"
+    REMEDIATION_PLANS ||--o| REMEDIATION_EXECUTIONS : "has (remediation_plan_id)"
+
+    REMEDIATION_EXECUTIONS ||--o| VERIFICATION_RESULTS : "verified_by (execution_id)"
+
+    USERS {
+        INTEGER id PK
+        VARCHAR name
+        VARCHAR email UK
+        VARCHAR password_hash
+        VARCHAR role
+        BOOLEAN is_active
+        TIMESTAMPTZ created_at
+    }
+
+    ENDPOINTS {
+        INTEGER id PK
+        VARCHAR agent_uuid UK
+        VARCHAR hostname
+        VARCHAR os_name
+        VARCHAR os_version
+        VARCHAR agent_version
+        INTEGER owner_user_id FK
+        TIMESTAMPTZ last_seen_at
+        VARCHAR status
+        TIMESTAMPTZ created_at
+    }
+
+    INCIDENTS {
+        INTEGER id PK
+        VARCHAR incident_number UK
+        INTEGER reporter_id FK
+        INTEGER endpoint_id FK
+        INTEGER assigned_technician_id FK
+        VARCHAR title
+        TEXT description
+        VARCHAR category
+        VARCHAR priority
+        VARCHAR status
+        TEXT diagnosis_summary
+        TEXT resolution_summary
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+        TIMESTAMPTZ resolved_at
+        VARCHAR sync_idempotency_key UK
+    }
+
+    INCIDENT_COMMENTS {
+        INTEGER id PK
+        INTEGER incident_id FK
+        INTEGER author_id FK
+        VARCHAR author_name
+        TEXT comment
+        INTEGER is_internal
+        TIMESTAMPTZ created_at
+    }
+
+    DIAGNOSTIC_RUNS {
+        INTEGER id PK
+        INTEGER incident_id FK
+        INTEGER endpoint_id FK
+        VARCHAR source
+        VARCHAR rule_version
+        VARCHAR model_name
+        VARCHAR status
+        TIMESTAMPTZ started_at
+        TIMESTAMPTZ completed_at
+        TEXT summary
+        JSONB findings_json
+    }
+
+    DIAGNOSTIC_EVIDENCE {
+        INTEGER id PK
+        INTEGER diagnostic_run_id FK
+        VARCHAR evidence_type
+        VARCHAR key
+        JSONB value_json
+        TIMESTAMPTZ collected_at
+        VARCHAR sensitivity
+        INTEGER redacted
+    }
+
+    KNOWLEDGE_DOCUMENTS {
+        INTEGER id PK
+        VARCHAR doc_id UK
+        VARCHAR title
+        VARCHAR source_type
+        VARCHAR category
+        VARCHAR version
+        BOOLEAN approved
+        TEXT content
+        TIMESTAMPTZ created_at
+    }
+
+    KNOWLEDGE_CHUNKS {
+        INTEGER id PK
+        INTEGER document_id FK
+        INTEGER chunk_index
+        TEXT chunk_text
+        JSONB embedding_json
+        JSONB metadata_json
+    }
+
+    REMEDIATION_PLANS {
+        INTEGER id PK
+        INTEGER incident_id FK
+        INTEGER diagnostic_run_id FK
+        VARCHAR tool_id
+        JSONB arguments_json
+        TEXT reason
+        VARCHAR risk_level
+        INTEGER approval_required
+        VARCHAR status
+        TIMESTAMPTZ created_at
+    }
+
+    APPROVALS {
+        INTEGER id PK
+        INTEGER remediation_plan_id FK
+        INTEGER approver_user_id FK
+        VARCHAR decision
+        TEXT reason
+        TIMESTAMPTZ created_at
+    }
+
+    REMEDIATION_EXECUTIONS {
+        INTEGER id PK
+        INTEGER remediation_plan_id FK
+        INTEGER endpoint_id FK
+        VARCHAR tool_id
+        TIMESTAMPTZ started_at
+        TIMESTAMPTZ completed_at
+        VARCHAR execution_status
+        INTEGER exit_code
+        TEXT output_redacted
+        TEXT error_redacted
+        INTEGER is_mock
+    }
+
+    VERIFICATION_RESULTS {
+        INTEGER id PK
+        INTEGER execution_id FK
+        VARCHAR verification_type
+        VARCHAR status
+        JSONB evidence_json
+        TIMESTAMPTZ verified_at
+    }
+
+    ENDPOINT_SYNC_EVENTS {
+        INTEGER id PK
+        INTEGER endpoint_id FK
+        VARCHAR event_uuid UK
+        VARCHAR event_type
+        JSONB payload_json
+        TIMESTAMPTZ created_at_local
+        TIMESTAMPTZ received_at_server
+        VARCHAR sync_status
+    }
+
+    AUDIT_EVENTS {
+        INTEGER id PK
+        VARCHAR actor_type
+        VARCHAR actor_id
+        VARCHAR event_type
+        VARCHAR entity_type
+        VARCHAR entity_id
+        JSONB details_json
+        TIMESTAMPTZ created_at
+    }
